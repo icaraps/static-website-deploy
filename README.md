@@ -16,7 +16,7 @@ With [`Azure Static Website Action`](https://github.com/tibor19/static-website-d
 ## Create Azure Storage Account and deploy static website using GitHub Actions
 1. Follow the tutorial [Azure Storage Account](https://docs.microsoft.com/es-es/learn/modules/create-azure-storage-account/5-exercise-create-a-storage-account))
 2. Copy the following example of workflow and create the workflow to `.github/workflows/` in your project repository.
-3. Change `folder` to your folder path where files to deploy are.
+3. Change `source` to your folder path where files to deploy are.
 4. Commit and push your project to GitHub repository, you should see a new GitHub Action initiated in **Actions** tab.
 
 
@@ -34,7 +34,7 @@ jobs:
     - uses: tibor19/static-website-deploy@v1
       with:
         enabled-static-website: 'true'
-        folder: 'MyFolder'
+        source: 'MyFolder'
         connection-string: ${{ secrets.CONNECTION_STRING }}
 
 ```
