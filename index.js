@@ -49,7 +49,9 @@ const main = async () => {
         throw "Either specify a container name, or set enableStaticWebSite to true!";
     }
 
-    const folder = getInput('folder');
+    const source = getInput('source');
+    let target = getInput('target');
+    if (target.startsWith('/')) target = target.slice(1);
     const accessPolicy = getInput('public-access-policy');
     const indexFile = getInput('index-file') || 'index.html';
     const errorFile = getInput('error-file');
@@ -80,19 +82,29 @@ const main = async () => {
     }
 
     if(removeExistingFiles){
-        for await (const blob of containerService.listBlobsFlat()){
-            await containerService.deleteBlob(blob.name);
+        if (!target) {
+            for await (const blob of containerService.listBlobsFlat()){
+                await containerService.deleteBlob(blob.name);
+            }
         }
+        else {
+            for await (const blob of containerService.listBlobsFlat()){
+                if (blob.name.startsWith(target)) {
+                    await containerService.deleteBlob(blob.name);
+                }
+            }
+        }
+        
     }
 
-    const rootFolder = path.resolve(folder);
+    const rootFolder = path.resolve(source);
     if(fs.statSync(rootFolder).isFile()){
-        return await uploadFileToBlob(containerService, rootFolder, path.basename(rootFolder));
+        return await uploadFileToBlob(containerService, rootFolder, path.join(target, path.basename(rootFolder)));
     }
     else{
         for await (const fileName of listFiles(rootFolder)) {
             var blobName = path.relative(rootFolder, fileName);
-            await uploadFileToBlob(containerService, fileName, blobName);
+            await uploadFileToBlob(containerService, fileName, path.join(target, blobName));
         }
     }
 };

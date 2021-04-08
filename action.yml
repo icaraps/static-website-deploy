@@ -4,10 +4,14 @@ inputs:
   connection-string: 
     description: 'Connection String of the Azure Storage Container'
     required: true
-  folder: 
+  source:
     description: 'Folder containing the files to be uploaded to the Storage Container'
     required: false
     default: '.'
+  target:
+    description: 'Target folder to upload the files to'
+    required: false
+    default: ''
   blob-container-name: 
     description: 'Name of the Blob Container Storage'
     required: false
