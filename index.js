@@ -56,6 +56,7 @@ const main = async () => {
     const indexFile = getInput('index-file') || 'index.html';
     const errorFile = getInput('error-file');
     const removeExistingFiles = getInput('remove-existing-files');
+    const excludeSubfolder = getInput('exclude-subfolder');
 
     const blobServiceClient = await BlobServiceClient.fromConnectionString(connectionString);
 
@@ -90,7 +91,11 @@ const main = async () => {
         else {
             for await (const blob of containerService.listBlobsFlat()){
                 if (blob.name.startsWith(target)) {
-                    await containerService.deleteBlob(blob.name);
+                    if(excludeSubfolder !== '' && blob.name.startsWith(target + `${excludeSubfolder}/`)){
+                        console.log(`The file ${blob.name} was excluded from deletion`);
+                    } else {
+                        await containerService.deleteBlob(blob.name);
+                    }
                 }
             }
         }

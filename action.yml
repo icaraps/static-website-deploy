@@ -30,6 +30,10 @@ inputs:
   remove-existing-files: 
     description: 'If the existing files should be removed before uploading the new files'
     required: false
+  exclude-subfolder:
+    description: 'Exclude removing subfolder of target'
+    required: false
+    default: ''
 
 branding:
   icon: 'upload-cloud'
