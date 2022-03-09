@@ -37,14 +37,14 @@ async function uploadFileToBlob(containerService, fileName, blobName){
 }
 
 function checkSubfolderExclusion(folderName, target, blob) {
-    if(folderNames.indexOf(',') >= 0) {
+    if(folderName.indexOf(',') >= 0) {
         var exclusionFlag = false;
-        var folderNameArray = folderNames.split(',').map(function(value) {
+        var folderNameArray = folderName.split(',').map(function(value) {
             return value.trim();
         });
 
-        folderNameArray.forEach(folderName => {
-            if(blob.name.startsWith(target + `${folderName}/`)){
+        folderNameArray.forEach(theFolderName => {
+            if(blob.name.startsWith(target + `${theFolderName}/`)){
                 exclusionFlag = true;
             }
         });
