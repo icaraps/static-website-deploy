@@ -36,6 +36,24 @@ async function uploadFileToBlob(containerService, fileName, blobName){
     console.log(`The file ${fileName} was uploaded as ${blobName}, with the content-type of ${blobContentType}`);
 }
 
+function checkSubfolderExclusion(folderName, target, blob) {
+    if(folderNames.indexOf(',') >= 0) {
+        var exclusionFlag = false;
+        var folderNameArray = folderNames.split(',').map(function(value) {
+            return value.trim();
+        });
+
+        folderNameArray.forEach(folderName => {
+            if(blob.name.startsWith(target + `${folderName}/`)){
+                exclusionFlag = true;
+            }
+        });
+        return exclusionFlag;
+    } else {
+        return blob.name.startsWith(target + `${folderName}/`);
+    }
+}
+
 const main = async () => {
 
     const connectionString = getInput('connection-string');
@@ -91,10 +109,11 @@ const main = async () => {
         else {
             for await (const blob of containerService.listBlobsFlat()){
                 if (blob.name.startsWith(target)) {
-                    if(excludeSubfolder !== '' && blob.name.startsWith(target + `${excludeSubfolder}/`)){
+                    if(excludeSubfolder !== '' && checkSubfolderExclusion(excludeSubfolder, target, blob)){
                         console.log(`The file ${blob.name} was excluded from deletion`);
                     } else {
-                        await containerService.deleteBlob(blob.name);
+                        console.log(`The file ${blob.name} is set for deletion`);
+                        //await containerService.deleteBlob(blob.name);
                     }
                 }
             }
