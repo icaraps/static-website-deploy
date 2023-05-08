@@ -54,6 +54,12 @@ function checkSubfolderExclusion(folderName, target, blob) {
     }
 }
 
+function millisToMinutesAndSeconds(millis) {
+    var minutes = Math.floor(millis / 60000);
+    var seconds = ((millis % 60000) / 1000).toFixed(0);
+    return minutes + "m " + (seconds < 10 ? '0' : '') + seconds + "s";
+}
+
 async function copyBlob(
     containerService, 
     sourceBlobContainerName, 
@@ -72,31 +78,24 @@ async function copyBlob(
     // start copy
     const copyPoller = await destinationBlobClient.beginCopyFromURL(sourceBlobClient.url);
 
-    console.log(`copying folder ${sourceBlobName} to ${sourceBlobName}`);
+    console.log(`copying file ${sourceBlobName} to ${destinationBlobName}`);
     // wait until done
     await copyPoller.pollUntilDone();
 }
 
-async function deleteBlobIfItExists(containerClient, blobName){
-
-  // include: Delete the base blob and all of its snapshots.
-  // only: Delete only the blob's snapshots and not the blob itself.
-  const options = {
-    deleteSnapshots: 'include' // or 'only'
-  }
-
-  // Create blob client from container client
-  const blockBlobClient = await containerClient.getBlockBlobClient(blobName);
-
-  await blockBlobClient.deleteIfExists(options);
-
-  console.log(`deleted blob ${blobName}`);
-
-}
-
 const main = async () => {
-    let UID = new Date().valueOf();
-
+    let UID = (new Date().valueOf()).toString();
+    let uploadStart;
+    let uploadEnd; 
+    let copySubFolderStart;
+    let copySubFolderEnd; 
+    let deleteTargetStart;
+    let deleteTargetEnd;
+    let copyStart;
+    let copyEnd; 
+    let deleteTempStart;
+    let deleteTempEnd; 
+    
     const connectionString = getInput('connection-string');
     if (!connectionString) {
         throw "Connection string must be specified!";
@@ -111,6 +110,14 @@ const main = async () => {
     const source = getInput('source');
     let target = getInput('target');
     if (target.startsWith('/')) target = target.slice(1);
+    let targetUID = '/';
+
+    if(!target) {
+        targetUID = UID;
+    } else if (target !== '/'){
+        targetUID = path.join(target, '..', UID);
+    }
+
     const accessPolicy = getInput('public-access-policy');
     const indexFile = getInput('index-file') || 'index.html';
     const errorFile = getInput('error-file');
@@ -141,56 +148,88 @@ const main = async () => {
         await containerService.setAccessPolicy(accessPolicy);
     }
 
-    // upload files to target folder
-    let targetUID = target + UID;
     const rootFolder = path.resolve(source);
+
     if(fs.statSync(rootFolder).isFile()){
-        return await uploadFileToBlob(containerService, rootFolder, path.join(targetUID, path.basename(rootFolder)));
+        // when does this ever get called in the case of AdobeDocs?
+        // seems to be if the pathPrefix is a file location then this uploads to that???
+        return await uploadFileToBlob(containerService, rootFolder, path.join(target, path.basename(rootFolder)));
     }
     else{
+        uploadStart = new Date();
         for await (const fileName of listFiles(rootFolder)) {
             var blobName = path.relative(rootFolder, fileName);
             await uploadFileToBlob(containerService, fileName, path.join(targetUID, blobName));
         }
+        uploadEnd = new Date();
     }
 
-    // delete target blob
-    await deleteBlobIfItExists(containerService, target);
+    copySubFolderStart = new Date();
+    // move over excluded subfolders to temp location too
+    for await (const blob of containerService.listBlobsFlat({prefix: target})) {
+        // make sure to get the excludeSubfolder and copy it
+        if (excludeSubfolder !== '' && checkSubfolderExclusion(excludeSubfolder, target, blob)) {
+            // get the split after target so we can just copy over just the excluded subfolders 
+            let blobNameSplit =  blob.name.split(target)[1];
+            console.log(`The file ${blob.name} is copying to ${path.join(targetUID, blobNameSplit)}`);
 
-    // copy folder 
-    await copyBlob(containerService, containerName, targetUID, containerName, target);
-    /*
-    if(removeExistingFiles){
-        if (!target) {
-            for await (const blob of containerService.listBlobsFlat()){
+            await copyBlob(blobServiceClient, containerName, blob.name, containerName, path.join(targetUID, blobNameSplit));
+        } 
+    }
+    copySubFolderEnd= new Date();
+
+    deleteTargetStart = new Date();
+
+    // delete original target folder
+    if (!target) {
+        for await (const blob of containerService.listBlobsFlat()){
+            if (!blob.name.startsWith(targetUID)) {
                 await containerService.deleteBlob(blob.name);
             }
         }
-        else {
-            for await (const blob of containerService.listBlobsFlat()){
-                if (blob.name.startsWith(target)) {
-                    if(excludeSubfolder !== '' && checkSubfolderExclusion(excludeSubfolder, target, blob)){
-                        console.log(`The file ${blob.name} was excluded from deletion`);
-                    } else {
-                        console.log(`The file ${blob.name} is set for deletion`);
-                        await containerService.deleteBlob(blob.name);
-                    }
-                }
+    }
+    else {
+        for await (const blob of containerService.listBlobsFlat({prefix: target})){
+            if (blob.name.startsWith(target)) {
+                console.log(`The file ${blob.name} is set for deletion`);
+                await containerService.deleteBlob(blob.name);
             }
         }
     }
 
-    const rootFolder = path.resolve(source);
-    if(fs.statSync(rootFolder).isFile()){
-        return await uploadFileToBlob(containerService, rootFolder, path.join(target, path.basename(rootFolder)));
+    deleteTargetEnd = new Date();
+    copyStart = new Date();
+
+    // copy temp foldr back to target
+    for await (const blob of containerService.listBlobsFlat({prefix: targetUID})){
+        // get the split after targetUID
+        let blobNameTargetUIDSplit =  blob.name.split(targetUID)[1];
+        let copyBackToOriginalPath = path.join(target, blobNameTargetUIDSplit);
+        if(!target) {
+            if (blobNameTargetUIDSplit.startsWith('/')) blobNameTargetUIDSplit = blobNameTargetUIDSplit.slice(1);
+            copyBackToOriginalPath = blobNameTargetUIDSplit;
+        }
+        await copyBlob(blobServiceClient, containerName, blob.name, containerName, copyBackToOriginalPath);
     }
-    else{
-        for await (const fileName of listFiles(rootFolder)) {
-            var blobName = path.relative(rootFolder, fileName);
-            await uploadFileToBlob(containerService, fileName, path.join(target, blobName));
+
+    copyEnd = new Date();
+    deleteTempStart = new Date();
+
+    // delete temp folder
+    for await (const blob of containerService.listBlobsFlat({prefix: targetUID})){
+        if (blob.name.startsWith(targetUID)) {
+            console.log(`The file ${blob.name} is set for deletion`);
+            await containerService.deleteBlob(blob.name);
         }
     }
-    */
+
+    deleteTempEnd = new Date();
+    // millisToMinutesAndSeconds
+    console.log(`Upload took: ${millisToMinutesAndSeconds(uploadEnd - uploadStart)}`);
+    console.log(`Copy subfolder took: ${millisToMinutesAndSeconds(copySubFolderEnd - copySubFolderStart)}`);
+    console.log(`Deletion of original target folder took: ${millisToMinutesAndSeconds(deleteTargetEnd - deleteTargetStart)}`);
+    console.log(`Copy from temp to target folder took: ${millisToMinutesAndSeconds(copyEnd - copyStart)}`);
+    console.log(`Deletion of temp folder took: ${millisToMinutesAndSeconds(deleteTempEnd - deleteTempStart)}`);
 };
 
 main().catch(err => {
