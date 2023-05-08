@@ -77,7 +77,7 @@ async function copyBlob(
     await copyPoller.pollUntilDone();
 }
 
-async function deletedeleteBlobBlobIfItExists(containerClient, blobName){
+async function deleteBlob(containerClient, blobName){
 
   // include: Delete the base blob and all of its snapshots.
   // only: Delete only the blob's snapshots and not the blob itself.
