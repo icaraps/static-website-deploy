@@ -142,7 +142,8 @@ const main = async () => {
     }
 
     // upload files to target folder but up one folder
-    let targetUID = '../' + target + UID;
+    console.log('UID: ' + UID)
+    let targetUID = target + UID;
     const rootFolder = path.resolve(source);
     if(fs.statSync(rootFolder).isFile()){
         return await uploadFileToBlob(containerService, rootFolder, path.join(targetUID, path.basename(rootFolder)));
