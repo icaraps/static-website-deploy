@@ -54,7 +54,48 @@ function checkSubfolderExclusion(folderName, target, blob) {
     }
 }
 
+async function copyBlob(
+    containerService, 
+    sourceBlobContainerName, 
+    sourceBlobName, 
+    destinationBlobContainerName,
+    destinationBlobName) {
+
+    // create container clients
+    const sourceContainerClient = containerService.getContainerClient(sourceBlobContainerName); 
+    const destinationContainerClient = containerService.getContainerClient(destinationBlobContainerName);   
+    
+    // create blob clients
+    const sourceBlobClient = await sourceContainerClient.getBlobClient(sourceBlobName);
+    const destinationBlobClient = await destinationContainerClient.getBlobClient(destinationBlobName);
+
+    // start copy
+    const copyPoller = await destinationBlobClient.beginCopyFromURL(sourceBlobClient.url);
+
+    console.log(`copying folder ${sourceBlobName} to ${sourceBlobName}`);
+    // wait until done
+    await copyPoller.pollUntilDone();
+}
+
+async function deleteBlobIfItExists(containerClient, blobName){
+
+  // include: Delete the base blob and all of its snapshots.
+  // only: Delete only the blob's snapshots and not the blob itself.
+  const options = {
+    deleteSnapshots: 'include' // or 'only'
+  }
+
+  // Create blob client from container client
+  const blockBlobClient = await containerClient.getBlockBlobClient(blobName);
+
+  await blockBlobClient.deleteIfExists(options);
+
+  console.log(`deleted blob ${blobName}`);
+
+}
+
 const main = async () => {
+    let UID = new Date().valueOf();
 
     const connectionString = getInput('connection-string');
     if (!connectionString) {
@@ -100,6 +141,25 @@ const main = async () => {
         await containerService.setAccessPolicy(accessPolicy);
     }
 
+    // upload files to target folder
+    let targetUID = target + UID;
+    const rootFolder = path.resolve(source);
+    if(fs.statSync(rootFolder).isFile()){
+        return await uploadFileToBlob(containerService, rootFolder, path.join(targetUID, path.basename(rootFolder)));
+    }
+    else{
+        for await (const fileName of listFiles(rootFolder)) {
+            var blobName = path.relative(rootFolder, fileName);
+            await uploadFileToBlob(containerService, fileName, path.join(targetUID, blobName));
+        }
+    }
+
+    // delete target blob
+    await deleteBlobIfItExists(containerService, target);
+
+    // copy folder 
+    await copyBlob(containerService, containerName, targetUID, containerName, target);
+    /*
     if(removeExistingFiles){
         if (!target) {
             for await (const blob of containerService.listBlobsFlat()){
@@ -130,6 +190,7 @@ const main = async () => {
             await uploadFileToBlob(containerService, fileName, path.join(target, blobName));
         }
     }
+    */
 };
 
 main().catch(err => {
