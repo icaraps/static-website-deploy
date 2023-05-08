@@ -77,7 +77,7 @@ async function copyBlob(
     await copyPoller.pollUntilDone();
 }
 
-async function deleteBlobIfItExists(containerClient, blobName){
+async function deletedeleteBlobBlobIfItExists(containerClient, blobName){
 
   // include: Delete the base blob and all of its snapshots.
   // only: Delete only the blob's snapshots and not the blob itself.
@@ -88,7 +88,7 @@ async function deleteBlobIfItExists(containerClient, blobName){
   // Create blob client from container client
   const blockBlobClient = await containerClient.getBlockBlobClient(blobName);
 
-  await blockBlobClient.deleteIfExists(options);
+  await blockBlobClient.delete(options);
 
   console.log(`deleted blob ${blobName}`);
 
@@ -141,8 +141,8 @@ const main = async () => {
         await containerService.setAccessPolicy(accessPolicy);
     }
 
-    // upload files to target folder
-    let targetUID = target + UID;
+    // upload files to target folder but up one folder
+    let targetUID = '../' + target + UID;
     const rootFolder = path.resolve(source);
     if(fs.statSync(rootFolder).isFile()){
         return await uploadFileToBlob(containerService, rootFolder, path.join(targetUID, path.basename(rootFolder)));
@@ -155,7 +155,7 @@ const main = async () => {
     }
 
     // delete target blob
-    await deleteBlobIfItExists(containerService, target);
+    await deleteBlob(containerService, target);
 
     // copy folder 
     await copyBlob(containerService, containerName, targetUID, containerName, target);
