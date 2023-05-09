@@ -149,11 +149,14 @@ const main = async () => {
     const rootFolder = path.resolve(source);
     console.log('root folder: ' + rootFolder)
     console.log('path join:' + path.join(targetUID, path.basename(rootFolder)))
+
     if(fs.statSync(rootFolder).isFile()){
+        console.log('isFile?: ' + path.join(targetUID, path.basename(rootFolder)));
         return await uploadFileToBlob(containerService, rootFolder, path.join(targetUID, path.basename(rootFolder)));
     }
     else{
         for await (const fileName of listFiles(rootFolder)) {
+            console.log('fileName of:' + fileName);
             var blobName = path.relative(rootFolder, fileName);
             await uploadFileToBlob(containerService, fileName, path.join(targetUID, blobName));
         }
