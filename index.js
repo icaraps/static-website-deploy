@@ -72,7 +72,7 @@ async function copyBlob(
     // start copy
     const copyPoller = await destinationBlobClient.beginCopyFromURL(sourceBlobClient.url);
 
-    console.log(`copying folder ${sourceBlobName} to ${sourceBlobName}`);
+    console.log(`copying file ${sourceBlobName} to ${sourceBlobName}`);
     // wait until done
     await copyPoller.pollUntilDone();
 }
@@ -156,12 +156,21 @@ const main = async () => {
     else{
         for await (const fileName of listFiles(rootFolder)) {
             var blobName = path.relative(rootFolder, fileName);
-            // upload to temp dir up one level of the target...
-
             await uploadFileToBlob(containerService, fileName, path.join(targetUID, blobName));
-            //await uploadFileToBlob(containerService, fileName, path.join(target, blobName));
         }
     }
+
+    // move over excluded subfolders to temp location too
+    for await (const blob of containerService.listBlobsFlat()) {
+        if (blob.name.startsWith(target)) {
+            if (excludeSubfolder !== '' && checkSubfolderExclusion(excludeSubfolder, target, blob)) {
+                console.log(`The file ${blob.name} is copying to ${path.join(targetUID, blob.name)}`);
+
+                await copyBlob(containerService, containerName, blob.name, containerName, path.join(targetUID, blob.name));
+            } 
+        }
+    }
+
 
     // if(fs.statSync(rootFolder).isFile()){
     //     console.log('isFile?: ' + path.join(targetUID, path.basename(rootFolder)));
