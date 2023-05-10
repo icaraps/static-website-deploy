@@ -164,9 +164,11 @@ const main = async () => {
     for await (const blob of containerService.listBlobsFlat()) {
         if (blob.name.startsWith(target)) {
             if (excludeSubfolder !== '' && checkSubfolderExclusion(excludeSubfolder, target, blob)) {
-                console.log(`The file ${blob.name} is copying to ${path.join(targetUID, blob.name)}`);
 
-                await copyBlob(blobServiceClient, containerName, blob.name, containerName, path.join(targetUID, blob.name));
+                let blobNameStripped = path.join(excludeSubfolder,  blob.name);
+                console.log(`The file ${blob.name} is copying to ${path.join(targetUID, blobNameStripped)}`);
+
+                await copyBlob(blobServiceClient, containerName, blob.name, containerName, path.join(targetUID, blobNameStripped));
             } 
         }
     }
