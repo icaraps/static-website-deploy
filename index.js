@@ -173,70 +173,28 @@ const main = async () => {
         } 
     }
 
-    // if (!target) {
-    //     // kinda unclear when this fires
-    //     for await (const blob of containerService.listBlobsFlat()){
-    //         await containerService.deleteBlob(blob.name);
-    //     }
-    // }
-    // else {
-    //     for await (const blob of containerService.listBlobsFlat({prefix: target})){
-    //         if (blob.name.startsWith(target)) {
-    //             console.log(`The file ${blob.name} is set for deletion`);
-    //             await containerService.deleteBlob(blob.name);
-    //         }
-    //     }
-    // }
-
-
-
-    // if(fs.statSync(rootFolder).isFile()){
-    //     console.log('isFile?: ' + path.join(targetUID, path.basename(rootFolder)));
-    //     return await uploadFileToBlob(containerService, rootFolder, path.join(targetUID, path.basename(rootFolder)));
-    // }
-    // else{
-    //     for await (const fileName of listFiles(rootFolder)) {
-    //         console.log('fileName of:' + fileName);
-    //         var blobName = path.relative(rootFolder, fileName);
-    //         await uploadFileToBlob(containerService, fileName, path.join(targetUID, blobName));
-    //     }
-    // }
-
-
-    // copy folder 
-    //await copyBlob(containerService, containerName, targetUID, containerName, target);
-    /*
-    if(removeExistingFiles){
-        if (!target) {
-            for await (const blob of containerService.listBlobsFlat()){
+    // delete original target folder
+    if (!target) {
+        // kinda unclear when this fires
+        for await (const blob of containerService.listBlobsFlat()){
+            await containerService.deleteBlob(blob.name);
+        }
+    }
+    else {
+        for await (const blob of containerService.listBlobsFlat({prefix: target})){
+            if (blob.name.startsWith(target)) {
+                console.log(`The file ${blob.name} is set for deletion`);
                 await containerService.deleteBlob(blob.name);
             }
         }
-        else {
-            for await (const blob of containerService.listBlobsFlat()){
-                if (blob.name.startsWith(target)) {
-                    if(excludeSubfolder !== '' && checkSubfolderExclusion(excludeSubfolder, target, blob)){
-                        console.log(`The file ${blob.name} was excluded from deletion`);
-                    } else {
-                        console.log(`The file ${blob.name} is set for deletion`);
-                        await containerService.deleteBlob(blob.name);
-                    }
-                }
-            }
-        }
     }
 
-    const rootFolder = path.resolve(source);
-    if(fs.statSync(rootFolder).isFile()){
-        return await uploadFileToBlob(containerService, rootFolder, path.join(target, path.basename(rootFolder)));
+    // copy temp foldr back to target
+    for await (const blob of containerService.listBlobsFlat({prefix: targetUID})){
+        // get the split after targetUID
+        let blobNameTargetUIDSplit =  blob.name.split(targetUID)[1];
+        await copyBlob(blobServiceClient, containerName, blob.name, containerName, path.join(target, blobNameSplit));
     }
-    else{
-        for await (const fileName of listFiles(rootFolder)) {
-            var blobName = path.relative(rootFolder, fileName);
-            await uploadFileToBlob(containerService, fileName, path.join(target, blobName));
-        }
-    }
-    */
 };
 
 main().catch(err => {
