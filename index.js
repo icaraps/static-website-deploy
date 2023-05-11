@@ -162,17 +162,32 @@ const main = async () => {
 
     // move over excluded subfolders to temp location too
     for await (const blob of containerService.listBlobsFlat({prefix: target})) {
-        if (blob.name.startsWith(target)) {
-            if (excludeSubfolder !== '' && checkSubfolderExclusion(excludeSubfolder, target, blob)) {
+        // make sure to get the excludeSubfolder and copy it
+        if (excludeSubfolder !== '' && checkSubfolderExclusion(excludeSubfolder, target, blob)) {
 
-                // get the split after target so we can just copy over just the excluded subfolders 
-                let blobNameSplit =  blob.name.split(target)[1];
-                console.log(`The file ${blob.name} is copying to ${path.join(targetUID, blobNameSplit)}`);
+            // get the split after target so we can just copy over just the excluded subfolders 
+            let blobNameSplit =  blob.name.split(target)[1];
+            console.log(`The file ${blob.name} is copying to ${path.join(targetUID, blobNameSplit)}`);
 
-                await copyBlob(blobServiceClient, containerName, blob.name, containerName, path.join(targetUID, blobNameSplit));
-            } 
-        }
+            await copyBlob(blobServiceClient, containerName, blob.name, containerName, path.join(targetUID, blobNameSplit));
+        } 
     }
+
+    // if (!target) {
+    //     // kinda unclear when this fires
+    //     for await (const blob of containerService.listBlobsFlat()){
+    //         await containerService.deleteBlob(blob.name);
+    //     }
+    // }
+    // else {
+    //     for await (const blob of containerService.listBlobsFlat({prefix: target})){
+    //         if (blob.name.startsWith(target)) {
+    //             console.log(`The file ${blob.name} is set for deletion`);
+    //             await containerService.deleteBlob(blob.name);
+    //         }
+    //     }
+    // }
+
 
 
     // if(fs.statSync(rootFolder).isFile()){
