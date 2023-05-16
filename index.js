@@ -54,6 +54,12 @@ function checkSubfolderExclusion(folderName, target, blob) {
     }
 }
 
+function millisToMinutesAndSeconds(millis) {
+    var minutes = Math.floor(millis / 60000);
+    var seconds = ((millis % 60000) / 1000).toFixed(0);
+    return minutes + "m " + (seconds < 10 ? '0' : '') + seconds + "s";
+}
+
 async function copyBlob(
     containerService, 
     sourceBlobContainerName, 
@@ -96,7 +102,17 @@ async function deleteBlob(containerClient, blobName){
 
 const main = async () => {
     let UID = (new Date().valueOf()).toString();
-
+    let uploadStart;
+    let uploadEnd; 
+    let copySubFolderStart;
+    let copySubFolderEnd; 
+    let deleteTargetStart;
+    let deleteTargetEnd;
+    let copyStart;
+    let copyEnd; 
+    let deleteTempStart;
+    let deleteTempEnd; 
+    
     const connectionString = getInput('connection-string');
     if (!connectionString) {
         throw "Connection string must be specified!";
@@ -154,17 +170,19 @@ const main = async () => {
         return await uploadFileToBlob(containerService, rootFolder, path.join(target, path.basename(rootFolder)));
     }
     else{
+        uploadStart = new Date();
         for await (const fileName of listFiles(rootFolder)) {
             var blobName = path.relative(rootFolder, fileName);
             await uploadFileToBlob(containerService, fileName, path.join(targetUID, blobName));
         }
+        uploadEnd = new Date();
     }
 
+    copySubFolderStart = new Date();
     // move over excluded subfolders to temp location too
     for await (const blob of containerService.listBlobsFlat({prefix: target})) {
         // make sure to get the excludeSubfolder and copy it
         if (excludeSubfolder !== '' && checkSubfolderExclusion(excludeSubfolder, target, blob)) {
-
             // get the split after target so we can just copy over just the excluded subfolders 
             let blobNameSplit =  blob.name.split(target)[1];
             console.log(`The file ${blob.name} is copying to ${path.join(targetUID, blobNameSplit)}`);
@@ -172,7 +190,9 @@ const main = async () => {
             await copyBlob(blobServiceClient, containerName, blob.name, containerName, path.join(targetUID, blobNameSplit));
         } 
     }
+    copySubFolderEnd= new Date();
 
+    deleteTargetStart = new Date();
     // delete original target folder
     if (!target) {
         // kinda unclear when this fires
@@ -188,14 +208,18 @@ const main = async () => {
             }
         }
     }
+    deleteTargetEnd = new Date();
 
+    copyStart = new Date();
     // copy temp foldr back to target
     for await (const blob of containerService.listBlobsFlat({prefix: targetUID})){
         // get the split after targetUID
         let blobNameTargetUIDSplit =  blob.name.split(targetUID)[1];
         await copyBlob(blobServiceClient, containerName, blob.name, containerName, path.join(target, blobNameTargetUIDSplit));
     }
+    copyEnd = new Date();
 
+    deleteTempStart = new Date();
     // delete temp folder
     for await (const blob of containerService.listBlobsFlat({prefix: targetUID})){
         if (blob.name.startsWith(targetUID)) {
@@ -203,6 +227,7 @@ const main = async () => {
             await containerService.deleteBlob(blob.name);
         }
     }
+    deleteTempEnd = new Date();
 };
 
 main().catch(err => {
