@@ -83,23 +83,6 @@ async function copyBlob(
     await copyPoller.pollUntilDone();
 }
 
-async function deleteBlob(containerClient, blobName){
-
-  // include: Delete the base blob and all of its snapshots.
-  // only: Delete only the blob's snapshots and not the blob itself.
-  const options = {
-    deleteSnapshots: 'include' // or 'only'
-  }
-
-  // Create blob client from container client
-  const blockBlobClient = await containerClient.getBlockBlobClient(blobName);
-
-  await blockBlobClient.delete(options);
-
-  console.log(`deleted blob ${blobName}`);
-
-}
-
 const main = async () => {
     let UID = (new Date().valueOf()).toString();
     let uploadStart;
@@ -228,6 +211,13 @@ const main = async () => {
         }
     }
     deleteTempEnd = new Date();
+
+    // millisToMinutesAndSeconds
+    console.log(`Upload took: ${millisToMinutesAndSeconds(uploadEnd - uploadStart)}`);
+    console.log(`Copy subfolder took: ${millisToMinutesAndSeconds(copySubFolderEnd - copySubFolderStart)}`);
+    console.log(`Deletion of original target folder took: ${millisToMinutesAndSeconds(deleteTargetEnd - deleteTargetStart)}`);
+    console.log(`Copy from temp to target folder took: ${millisToMinutesAndSeconds(copyEnd - copyStart)}`);
+    console.log(`Deletion of temp folder took: ${millisToMinutesAndSeconds(deleteTempEnd - deleteTempStart)}`);
 };
 
 main().catch(err => {
