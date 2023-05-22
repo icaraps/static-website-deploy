@@ -157,6 +157,7 @@ const main = async () => {
     }
     else{
         uploadStart = new Date();
+        console.log('starting upload')
         for await (const fileName of listFiles(rootFolder)) {
             var blobName = path.relative(rootFolder, fileName);
             await uploadFileToBlob(containerService, fileName, path.join(targetUID, blobName));
