@@ -70,6 +70,7 @@ const main = async () => {
     const source = getInput('source');
     let target = getInput('target');
     if (target.startsWith('/')) target = target.slice(1);
+    
     const accessPolicy = getInput('public-access-policy');
     const indexFile = getInput('index-file') || 'index.html';
     const errorFile = getInput('error-file');
@@ -121,6 +122,13 @@ const main = async () => {
     }
 
     const rootFolder = path.resolve(source);
+
+    console.log(`enableStaticWebSite ${enableStaticWebSite}`)
+    console.log(`containerName ${containerName}`)
+    console.log(`source ${source}`)
+    console.log(`target ${target}`)
+    console.log(`rootFolder ${rootFolder}`)
+    
     if(fs.statSync(rootFolder).isFile()){
         return await uploadFileToBlob(containerService, rootFolder, path.join(target, path.basename(rootFolder)));
     }
