@@ -139,6 +139,7 @@ const main = async () => {
         await blobServiceClient.setProperties(props);
     }
 
+    console.log(`containerName ${containerName}`)
     const containerService = blobServiceClient.getContainerClient(containerName);
     if (!await containerService.exists()) {
         await containerService.create({ access: accessPolicy });
