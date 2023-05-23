@@ -112,18 +112,24 @@ const main = async () => {
     if (target.startsWith('/')) target = target.slice(1);
     let targetUID = '/';
     console.log(`target ${target}`)
-    if(target !== '/') {
-        // go up one level of path prefix unless it's at root already
-        console.log('target up')
-        targetUID = path.join(target, '..', UID);
-    } else if(!target){
-        console.log('wat')
-        targetUID = path.join('$web', UID);
-    }
+    console.log(`target argh ${target.length}`)
+    // if() {
+    //     // go up one level of path prefix unless it's at root already
+    //     console.log('target up')
+    //     targetUID = path.join(target, '..', UID);
+    // } else if(!target){
+    //     console.log('wat')
+    //     targetUID = path.join('$web', UID);
+    // }
 
     if(!target) {
-        console.log('uh ok')
+        console.log('wat')
+        targetUID = path.join('$web', UID);
+    } else if (target !== '/'){
+        console.log('target up')
+        targetUID = path.join(target, '..', UID);
     }
+
     const accessPolicy = getInput('public-access-policy');
     const indexFile = getInput('index-file') || 'index.html';
     const errorFile = getInput('error-file');
