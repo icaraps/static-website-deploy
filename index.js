@@ -226,7 +226,12 @@ const main = async () => {
     for await (const blob of containerService.listBlobsFlat({prefix: targetUID})){
         // get the split after targetUID
         let blobNameTargetUIDSplit =  blob.name.split(targetUID)[1];
-        await copyBlob(blobServiceClient, containerName, blob.name, containerName, path.join(target, blobNameTargetUIDSplit));
+        let copyBackToOriginalPath = path.join(target, blobNameTargetUIDSplit);
+        if(!target) {
+            if (blobNameTargetUIDSplit.startsWith('/')) blobNameTargetUIDSplit = blobNameTargetUIDSplit.slice(1);
+            copyBackToOriginalPath = blobNameTargetUIDSplit;
+        }
+        await copyBlob(blobServiceClient, containerName, blob.name, containerName, copyBackToOriginalPath);
     }
     copyEnd = new Date();
 
