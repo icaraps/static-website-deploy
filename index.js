@@ -114,7 +114,7 @@ const main = async () => {
     if(target !== '/') {
         // go up one level of path prefix unless it's at root already
         targetUID = path.join(target, '..', UID);
-    } else if(taget === ''){
+    } else if(target === ''){
         targetUID = path.join('$web', UID);
     }
     const accessPolicy = getInput('public-access-policy');
