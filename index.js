@@ -150,6 +150,12 @@ const main = async () => {
 
     const rootFolder = path.resolve(source);
 
+    console.log(`containerName ${containerName}`)
+    console.log(`source ${source}`)
+    console.log(`target ${target}`)
+    console.log(`rootFolder ${rootFolder}`)
+
+    console.log('uploading')
     if(fs.statSync(rootFolder).isFile()){
         // when does this ever get called in the case of AdobeDocs?
         // seems to be if the pathPrefix is a file location then this uploads to that???
@@ -165,6 +171,7 @@ const main = async () => {
         uploadEnd = new Date();
     }
 
+    console.log('copying')
     copySubFolderStart = new Date();
     // move over excluded subfolders to temp location too
     for await (const blob of containerService.listBlobsFlat({prefix: target})) {
@@ -180,6 +187,8 @@ const main = async () => {
     copySubFolderEnd= new Date();
 
     deleteTargetStart = new Date();
+
+    console.log('deleting og')
     // delete original target folder
     if (!target) {
         // kinda unclear when this fires
@@ -198,6 +207,7 @@ const main = async () => {
     deleteTargetEnd = new Date();
 
     copyStart = new Date();
+    console.log('copy temp folder')
     // copy temp foldr back to target
     for await (const blob of containerService.listBlobsFlat({prefix: targetUID})){
         // get the split after targetUID
@@ -207,6 +217,7 @@ const main = async () => {
     copyEnd = new Date();
 
     deleteTempStart = new Date();
+    console.log('delete temp')
     // delete temp folder
     for await (const blob of containerService.listBlobsFlat({prefix: targetUID})){
         if (blob.name.startsWith(targetUID)) {
