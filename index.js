@@ -124,7 +124,7 @@ const main = async () => {
 
     if(!target) {
         console.log('wat')
-        targetUID = path.join('$web', UID);
+        targetUID = UID;
     } else if (target !== '/'){
         console.log('target up')
         targetUID = path.join(target, '..', UID);
