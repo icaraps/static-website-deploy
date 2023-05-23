@@ -111,11 +111,18 @@ const main = async () => {
     let target = getInput('target');
     if (target.startsWith('/')) target = target.slice(1);
     let targetUID = '/';
+    console.log(`target ${target}`)
     if(target !== '/') {
         // go up one level of path prefix unless it's at root already
+        console.log('target up')
         targetUID = path.join(target, '..', UID);
     } else if(target === ''){
+        console.log('wat')
         targetUID = path.join('$web', UID);
+    }
+
+    if(!target) {
+        console.log('uh ok')
     }
     const accessPolicy = getInput('public-access-policy');
     const indexFile = getInput('index-file') || 'index.html';
