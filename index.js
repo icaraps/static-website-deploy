@@ -116,7 +116,7 @@ const main = async () => {
         // go up one level of path prefix unless it's at root already
         console.log('target up')
         targetUID = path.join(target, '..', UID);
-    } else if(target === ''){
+    } else if(!target){
         console.log('wat')
         targetUID = path.join('$web', UID);
     }
