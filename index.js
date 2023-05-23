@@ -111,22 +111,10 @@ const main = async () => {
     let target = getInput('target');
     if (target.startsWith('/')) target = target.slice(1);
     let targetUID = '/';
-    console.log(`target ${target}`)
-    console.log(`target argh ${target.length}`)
-    // if() {
-    //     // go up one level of path prefix unless it's at root already
-    //     console.log('target up')
-    //     targetUID = path.join(target, '..', UID);
-    // } else if(!target){
-    //     console.log('wat')
-    //     targetUID = path.join('$web', UID);
-    // }
 
     if(!target) {
-        console.log('wat')
         targetUID = UID;
     } else if (target !== '/'){
-        console.log('target up')
         targetUID = path.join(target, '..', UID);
     }
 
@@ -152,7 +140,6 @@ const main = async () => {
         await blobServiceClient.setProperties(props);
     }
 
-    console.log(`containerName ${containerName}`)
     const containerService = blobServiceClient.getContainerClient(containerName);
     if (!await containerService.exists()) {
         await containerService.create({ access: accessPolicy });
@@ -163,12 +150,6 @@ const main = async () => {
 
     const rootFolder = path.resolve(source);
 
-    console.log(`containerName ${containerName}`)
-    console.log(`source ${source}`)
-    console.log(`target ${target}`)
-    console.log(`rootFolder ${rootFolder}`)
-
-    console.log('uploading')
     if(fs.statSync(rootFolder).isFile()){
         // when does this ever get called in the case of AdobeDocs?
         // seems to be if the pathPrefix is a file location then this uploads to that???
@@ -176,7 +157,6 @@ const main = async () => {
     }
     else{
         uploadStart = new Date();
-        console.log('starting upload')
         for await (const fileName of listFiles(rootFolder)) {
             var blobName = path.relative(rootFolder, fileName);
             await uploadFileToBlob(containerService, fileName, path.join(targetUID, blobName));
@@ -184,7 +164,6 @@ const main = async () => {
         uploadEnd = new Date();
     }
 
-    console.log('copying')
     copySubFolderStart = new Date();
     // move over excluded subfolders to temp location too
     for await (const blob of containerService.listBlobsFlat({prefix: target})) {
@@ -201,7 +180,6 @@ const main = async () => {
 
     deleteTargetStart = new Date();
 
-    console.log('deleting og')
     // delete original target folder
     if (!target) {
         for await (const blob of containerService.listBlobsFlat()){
@@ -218,10 +196,10 @@ const main = async () => {
             }
         }
     }
-    deleteTargetEnd = new Date();
 
+    deleteTargetEnd = new Date();
     copyStart = new Date();
-    console.log('copy temp folder')
+
     // copy temp foldr back to target
     for await (const blob of containerService.listBlobsFlat({prefix: targetUID})){
         // get the split after targetUID
@@ -233,10 +211,10 @@ const main = async () => {
         }
         await copyBlob(blobServiceClient, containerName, blob.name, containerName, copyBackToOriginalPath);
     }
-    copyEnd = new Date();
 
+    copyEnd = new Date();
     deleteTempStart = new Date();
-    console.log('delete temp')
+
     // delete temp folder
     for await (const blob of containerService.listBlobsFlat({prefix: targetUID})){
         if (blob.name.startsWith(targetUID)) {
@@ -244,8 +222,8 @@ const main = async () => {
             await containerService.deleteBlob(blob.name);
         }
     }
-    deleteTempEnd = new Date();
 
+    deleteTempEnd = new Date();
     // millisToMinutesAndSeconds
     console.log(`Upload took: ${millisToMinutesAndSeconds(uploadEnd - uploadStart)}`);
     console.log(`Copy subfolder took: ${millisToMinutesAndSeconds(copySubFolderEnd - copySubFolderStart)}`);
